@@ -1,7 +1,7 @@
 FROM python:3.11-slim
 
 ENV PG_CONNECTION_STRING="postgresql://postgres:postgres@localhost:5432/test_db"
-COPY . /project
+COPY /tests /project
 WORKDIR /project
 RUN pip install --upgrade pip
 RUN pip install poetry

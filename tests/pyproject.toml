@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "tests"
+version = "0.1.0"
+description = ""
+authors = ["amaym0n <loco.skitls@gmail.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+allure-pg-client = "^1.1.1"
+
+[tool.poetry.group.dev.dependencies]
+poetry = "^1.7.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
