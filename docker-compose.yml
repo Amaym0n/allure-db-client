@@ -1,0 +1,17 @@
+services:
+  db:
+    image: postgres:latest
+    environment:
+      - POSTGRES_DB=test_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5432:5432"
+    container_name: test_pg
+
+  tests:
+    build:
+      dockerfile: Dockerfile
+    depends_on: [ db ]
+    container_name: python_tests
+name: allure-pg-client-tests
