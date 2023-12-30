@@ -15,7 +15,7 @@ services:
 
   tests:
     build:
-      dockerfile: tests/Dockerfile
+      dockerfile: Dockerfile
     depends_on: [ db ]
     links:
       - db

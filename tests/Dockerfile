@@ -1,7 +1,7 @@
 FROM python:3.11-slim
 
-COPY /tests /project
-WORKDIR /project
+COPY . /tests
+WORKDIR /tests
 RUN pip install --upgrade pip
 RUN pip install poetry
 RUN poetry install --no-root
