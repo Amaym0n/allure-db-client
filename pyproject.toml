@@ -1,11 +1,11 @@
 [tool.poetry]
-name = "allure-pg-client"
+name = "allure-db-client"
 version = "1.1.2"
 description = "DBClient that includes allure decorator that logging your queries and query results"
 authors = ["amaym0n <loco.skitls@gmail.com>"]
 readme = "README.md"
 packages = [
-    { include = "allure_pg_client" },
+    { include = "allure_db_client" },
 ]
 
 [tool.poetry.dependencies]

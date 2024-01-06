@@ -1,4 +1,4 @@
-from allure_pg_client import DBClient
+from allure_db_client import DBClient
 
 
 def test_check_hidden_execute_command(get_db_client: DBClient):

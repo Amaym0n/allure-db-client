@@ -2,7 +2,7 @@ import os
 
 import pytest
 
-from allure_pg_client import DBClient
+from allure_db_client import DBClient
 
 
 @pytest.fixture(scope="session")
