@@ -7,11 +7,65 @@ from psycopg import connect
 
 
 class DBClient:
+    """
+    A database client for performing SQL operations.
+
+    This client uses psycopg to connect to a PostgreSQL database and execute SQL queries. It provides various methods
+    for executing queries and fetching results in different formats. It also integrates with Allure for logging
+    queries and results, which is helpful for debugging and testing.
+
+    Attributes:
+        connection_string (str): A string used to connect to the database.
+
+    Methods:
+        get_list: Fetches the first column of each row from a query result as a list.
+        get_dict: Fetches the first two columns of each row from a query result as a dictionary.
+        select_all: Executes a query and fetches all rows.
+        get_first_value: Fetches the first column of the first row from a query result.
+        get_first_row: Fetches the first row from a query result.
+        execute: Executes a given SQL command without returning any result.
+        __enter__: Initiates a database connection upon entering a context.
+        __exit__: Closes the database connection upon exiting a context.
+    """
+
     def __init__(self, connection_string: str) -> None:
+        """
+        Initializes the DBClient with a given connection string.
+
+        Args:
+            connection_string (str): The database connection string.
+        """
         self.connection_string = connection_string
 
     def _execute(self, query: str, params: dict[str, Any], fetchall: bool) -> Any:
-        with allure.step(title='Query to DataBase: '):
+        """
+        Execute a SQL query using the provided parameters and return the result.
+
+        This method executes a SQL query on the database, using a cursor attached to the current database session.
+        It also logs the query and its result for debugging and tracking purposes using the Allure framework.
+
+        Parameters:
+        query (str): The SQL query to be executed.
+        params (dict[str, Any]): A dictionary containing the parameters to be used in the SQL query. These parameters
+                                 are used to safely inject values into the SQL query, preventing SQL injection.
+        fetchall (bool): A flag to determine whether to fetch all rows or just one. If True, fetches all rows,
+                         otherwise fetches only the first row.
+
+        Returns:
+        Any: The result of the executed SQL query. Returns all fetched rows if `fetchall` is True, otherwise returns
+             a single row.
+
+        Note:
+        The method uses Allure for logging purposes. It attaches the SQL query and its result to the Allure report for
+        better visibility and debugging. This can be particularly useful in testing environments for tracking the
+        executed queries and their outcomes.
+
+        Example:
+        '>>> self._execute(query="SELECT * FROM users WHERE id = %s", params={'id': 123}, fetchall=False)'
+        This would execute the SQL query "SELECT * FROM users WHERE id = %s" with the parameter 'id' set to 123,
+        and return the first row of the result.
+        """
+        with allure.step(title='Query to DataBase:'):
             allure.attach(query, name='Query to DataBase', attachment_type=allure.attachment_type.TEXT)
             self.cursor.execute(query=query, params=params)
             result = self.cursor.fetchall() if fetchall else self.cursor.fetchone()
@@ -71,14 +125,33 @@ class DBClient:
 
     def execute(self, query: str, params: dict[str, Any] | None = None) -> None:
         """
-            Args:
-                query (str): The SQL query to execute.
-                params (dict[str, Any] | None, optional): The parameters to substitute in the query.
-                    Defaults to None.
+        Execute a non-returning SQL query against the database.
+
+        This method is used for executing SQL commands that do not return a result set, such as INSERT, UPDATE,
+        or DELETE. It uses a cursor from the current database connection to execute the query. After execution,
+        it commits the changes to the database. Additionally, it logs the query using Allure for debugging and
+        auditing purposes.
+
+        Args:
+            query (str): The SQL query or command to be executed.
+            params (dict[str, Any] | None, optional): A dictionary containing parameters to safely inject into
+                the SQL query. This helps in preventing SQL injection attacks. Defaults to None if no parameters
+                are provided.
+
+        Example:
+            '>>> execute(query="INSERT INTO users (name, email) VALUES (%s, %s)",
+                         params={'name': 'John Doe', 'email': 'john@example.com'})'
+            This will insert a new row into the 'users' table with the name 'John Doe' and email 'john@example.com'.
+
+        Note:
+            It's important to ensure that the query does not return a result set, as this method does not handle
+            fetching results. For queries that retrieve data, use methods like 'select_all' or 'get_first_row'.
         """
-        self.cursor.execute(query=query, params=params)
-        self.connection.commit()
-        return
+        with allure.step(title='Query to DataBase:'):
+            allure.attach(query, name='Query to DataBase', attachment_type=allure.attachment_type.TEXT)
+            self.cursor.execute(query=query, params=params)
+            self.connection.commit()
+            return
 
     def __enter__(self) -> DBClient:
         self.connection = connect(self.connection_string)
