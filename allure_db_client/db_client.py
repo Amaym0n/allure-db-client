@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import Any
 
-import allure
 from psycopg import connect
 
 
@@ -28,7 +27,7 @@ class DBClient:
         __exit__: Closes the database connection upon exiting a context.
     """
 
-    def __init__(self, connection_string: str) -> None:
+    def __init__(self, connection_string: str, with_allure: bool = True) -> None:
         """
         Initializes the DBClient with a given connection string.
 
@@ -36,6 +35,7 @@ class DBClient:
             connection_string (str): The database connection string.
         """
         self.connection_string = connection_string
+        self.with_allure = with_allure
 
     def _execute(self, query: str, params: dict[str, Any], fetchall: bool) -> Any:
         """
@@ -65,12 +65,14 @@ class DBClient:
         This would execute the SQL query "SELECT * FROM users WHERE id = %s" with the parameter 'id' set to 123,
         and return the first row of the result.
         """
-        with allure.step(title='Query to DataBase:'):
-            allure.attach(query, name='Query to DataBase', attachment_type=allure.attachment_type.TEXT)
-            self.cursor.execute(query=query, params=params)
-            result = self.cursor.fetchall() if fetchall else self.cursor.fetchone()
-            allure.attach(str(result), name='Query Result', attachment_type=allure.attachment_type.TEXT)
-            return result
+        self.cursor.execute(query=query, params=params)
+        result = self.cursor.fetchall() if fetchall else self.cursor.fetchone()
+        if self.with_allure:
+            import allure
+            with allure.step(title='Query to DataBase'):
+                allure.attach(query, name='Query to DataBase', attachment_type=allure.attachment_type.TEXT)
+                allure.attach(str(result), name='Query Result', attachment_type=allure.attachment_type.TEXT)
+        return result
 
     def get_list(self, query: str, params: dict[str, Any] | None = None) -> list[Any]:
         """

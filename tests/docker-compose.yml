@@ -22,4 +22,4 @@ services:
     environment:
       - PG_CONNECTION_STRING=postgresql://postgres:postgres@db:5432/postgres
     container_name: python_tests
-name: allure-pg-client-tests
+name: allure-db-client
