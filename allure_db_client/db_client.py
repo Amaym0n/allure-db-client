@@ -149,10 +149,12 @@ class DBClient:
             It's important to ensure that the query does not return a result set, as this method does not handle
             fetching results. For queries that retrieve data, use methods like 'select_all' or 'get_first_row'.
         """
-        with allure.step(title='Query to DataBase:'):
-            allure.attach(query, name='Query to DataBase', attachment_type=allure.attachment_type.TEXT)
-            self.cursor.execute(query=query, params=params)
-            self.connection.commit()
+        self.cursor.execute(query=query, params=params)
+        self.connection.commit()
+        if self.with_allure:
+            import allure
+            with allure.step(title='Query to DataBase'):
+                allure.attach(query, name='Query to DataBase', attachment_type=allure.attachment_type.TEXT)
             return
 
     def __enter__(self) -> DBClient:
