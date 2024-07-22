@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from psycopg import connect
+from psycopg import Connection
 
 
 class DBClient:
@@ -158,7 +158,7 @@ class DBClient:
             return
 
     def __enter__(self) -> DBClient:
-        self.connection = connect(self.connection_string)
+        self.connection = Connection.connect(self.connection_string)
         self.cursor = self.connection.cursor()
         return self
 
