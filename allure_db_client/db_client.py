@@ -155,7 +155,7 @@ class DBClient:
             import allure
             with allure.step(title='Query to DataBase'):
                 allure.attach(query, name='Query to DataBase', attachment_type=allure.attachment_type.TEXT)
-            return
+        return
 
     def __enter__(self) -> DBClient:
         self.connection = Connection.connect(self.connection_string)
