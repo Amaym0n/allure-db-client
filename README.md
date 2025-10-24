@@ -1,70 +1,116 @@
 # allure-db-client
 
-The `allure-db-client` is a Python library designed to facilitate the interaction with PostgreSQL databases. It leverages the `psycopg` library for database connectivity and integrates with the Allure framework for enhanced logging and debugging capabilities. This library simplifies executing SQL queries and retrieving results in various formats, making it particularly useful in testing and debugging environments.
+A tiny helper around psycopg for running PostgreSQL queries in tests and utilities, with optional Allure reporting of executed SQL and results.
 
-### Features
+The package exposes two clients:
+- DBClient — sync client (psycopg Connection)
+- AsyncDBClient — async client (psycopg AsyncConnection)
 
-- Easy connection to PostgreSQL databases using a connection string.
-- Methods to fetch query results as lists, dictionaries, or individual values.
-- Integration with Allure for logging SQL queries and results.
-- Context management for automatic opening and closing of database connections.
-- Safe parameter substitution in SQL queries to prevent SQL injection.
+Both clients support a small, convenient API for common cases and can be used as context managers to automatically open/close connections.
 
-### Installation
+## Requirements
+- Python 3.11
+- PostgreSQL accessible via a connection string
 
-To install `allure-db-client`, you will need to have Python installed on your system. The library can be installed using pip:
+## Installation
+Install from PyPI:
 
 ```bash
 pip install allure-db-client
 ```
 
-### Usage
+Or with Poetry:
 
-#### Creating a Client Instance
+```bash
+poetry add allure-db-client
+```
 
-First, import `DBClient` from `allure-db-client` and create an instance with your database connection string:
+## Connection string
+Use a standard psycopg connection URI, for example:
 
+```
+postgresql://USER:PASSWORD@HOST:PORT/DBNAME
+```
+
+Example for local Dockerized Postgres:
+```
+postgresql://postgres:postgres@localhost:5432/postgres
+```
+
+## Quick start (sync)
 ```python
 from allure_db_client import DBClient
 
-db_client = DBClient(connection_string="your_connection_string")
+conn_str = "postgresql://postgres:postgres@localhost:5432/postgres"
+
+# with_allure=True will attach query and result to Allure report (if Allure is used in your tests)
+with DBClient(connection_string=conn_str, with_allure=True) as db:
+    # read examples
+    rows = db.select_all("SELECT 1 AS one, 2 AS two")
+    first_row = db.get_first_row("SELECT 42")         # -> (42,)
+    first_value = db.get_first_value("SELECT 'hi'")   # -> 'hi'
+    ids = db.get_list("SELECT generate_series(1, 3)") # -> [1, 2, 3]
+
+    # get_dict expects first two columns to be key/value
+    pairs = db.get_dict("SELECT 1, 'a' UNION ALL SELECT 2, 'b'") # -> {1: 'a', 2: 'b'}
+
+    # write example
+    db.execute("CREATE TEMP TABLE t(id int)")
+    db.execute("INSERT INTO t(id) VALUES (%(id)s)", params={"id": 7})
 ```
 
-#### Executing Queries
-
-You can execute various types of SQL queries using the provided methods:
-
-- `get_list(query, params)`: Fetches the first column of each row as a list.
-- `get_dict(query, params)`: Fetches the first two columns of each row as a dictionary.
-- `select_all(query, params)`: Executes a query and fetches all rows.
-- `get_first_value(query, params)`: Fetches the first column of the first row.
-- `get_first_row(query, params)`: Fetches the first row.
-- `execute(query, params)`: Executes a non-returning SQL command (e.g., INSERT, UPDATE).
-
-#### Context Management
-
-The `DBClient` can be used as a context manager to automatically handle database connections:
-
+## Quick start (async)
 ```python
-with DBClient(connection_string="your_connection_string") as db_client:
-    # Your database operations here
+import asyncio
+from allure_db_client import AsyncDBClient
+
+conn_str = "postgresql://postgres:postgres@localhost:5432/postgres"
+
+async def main():
+    async with AsyncDBClient(connection_string=conn_str, with_allure=True) as db:
+        rows = await db.select_all("SELECT 1")
+        value = await db.get_first_value("SELECT 'ok'")
+        await db.execute("CREATE TEMP TABLE t(id int)")
+
+asyncio.run(main())
 ```
 
-### Examples
+## API overview
+- select_all(query, params=None) -> list[tuple]
+- get_first_row(query, params=None) -> tuple | None
+- get_first_value(query, params=None) -> Any | None
+- get_list(query, params=None) -> list[Any]
+- get_dict(query, params=None) -> dict[Any, Any] | None
+- execute(query, params=None) -> None
 
-Here's an example of using `DBClient` to fetch user data from a `users` table:
+Notes:
+- params is a dict passed to psycopg; use named placeholders like %(name)s in SQL.
+- If with_allure=True, each call attaches the SQL and (for read queries) the result to the Allure report.
 
-```python
-with DBClient(connection_string="your_connection_string") as db_client:
-    users = db_client.select_all("SELECT * FROM users")
-    for user in users:
-        print(user)
+## Using with Allure
+The clients can attach SQL and results to Allure steps when with_allure=True. Add allure-pytest to your test environment and run tests with Allure:
+
+```bash
+pip install allure-pytest
+pytest --alluredir=./allure-results
 ```
 
-### Contributing
+Then open the report with your Allure CLI.
 
-Contributions to `allure-db-client` are welcome! Please read our contributing guidelines for details on how to submit pull requests, report issues, or request features.
+## Running tests locally
+This repository includes a minimal test setup using Docker. It will start Postgres and run tests against it.
 
-### License
+Prerequisites:
+- Docker and docker-compose
 
-`allure-db-client` is released under the MIT License. See the LICENSE file for more details.
+Commands (from project root):
+
+```bash
+cd tests
+docker compose up --build --abort-on-container-exit
+```
+
+The tests container will set PG_CONNECTION_STRING for the clients automatically, as defined in tests/docker-compose.yml.
+
+## License
+MIT — see LICENSE.
